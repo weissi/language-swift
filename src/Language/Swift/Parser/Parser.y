@@ -5,20 +5,30 @@ module Language.Swift.Parser.Parser where
 
 import Language.Swift.Parser.SourceLocation
 import Language.Swift.Parser.Lexer
+import Language.Swift.Parser.Token
 
 import Data.Char
+import Debug.Trace
 
     
 
 }
 
-%name calc
 %tokentype { Token }
 %error { parseError }
 %monad { Alex }
-%name parseSwift
+%name parseSwift Statements
 %lexer { lexerWrapper } { TokenEOF tokenSpanEmpty }
     %token
+    IDENT  { TokenIdentifier {} }
+    DECIMAL_LITERAL  { DecimalLiteral {} }
+    BINARY_LITERAL  { BinaryLiteral {} }
+    OCTAL_LITERAL  { OctalLiteral {} }
+    HEXADECIMAL_LITERAL  { HexadecimalLiteral {} }
+    FLOATING_POINT_LITERAL  { FloatingPointLiteral {} }
+    STRING_LITERAL  { StringLiteral {} }
+    EOF { TokenEOF {} }
+    -- auto-gen below
     ';'    { TokenSemicolon {} }
     'for'    { TokenFor {} }
     '('    { TokenLParen {} }
@@ -115,25 +125,8 @@ import Data.Char
     'true'    { TokenTrue {} }
     'false'    { TokenFalse {} }
     'nil'    { TokenNil {} }
-    '0b'    { Token0b {} }
-    '0o'    { Token0o {} }
-    '0x'    { Token0x {} }
-    'e'    { TokenTokenELowercase {} }
-    'E'    { TokenE {} }
-    'p'    { TokenTokenPLowercase {} }
-    'P'    { TokenP {} }
     '+'    { TokenPlus {} }
     '-'    { TokenMinus {} }
-    '"'    { TokenDQuotes {} }
-    '\('    { TokenBSLParen {} }
-    '\0'    { TokenBS0 {} }
-    '\\'    { TokenBSBS {} }
-    '\t'    { TokenBSt {} }
-    '\n'    { TokenBSn {} }
-    '\r'    { TokenBSr {} }
-    '\"'    { TokenBSDQuotes {} }
-    '\''    { TokenBS' {} }
-    '\u'    { TokenBSu {} }
     '/'    { TokenDiv {} }
     '*'    { TokenTimes {} }
     '%'    { TokenPercent {} }
@@ -152,8 +145,8 @@ Statement
     | Expression ';'    { () }
     | Declaration    { () }
     | Declaration ';'    { () }
-    | LoopStatement    { () }
-    | LoopStatement ';'    { () }
+    | LoopStatement    { $1 }
+    | LoopStatement ';'    { $1 }
     | BranchStatement    { () }
     | BranchStatement ';'    { () }
     | LabeledStatement    { () }
@@ -161,36 +154,36 @@ Statement
     | ControlTransferStatement    { () }
     | ControlTransferStatement ';'    { () }
 
-Statements :: { () }
+Statements :: { [()] }
 Statements
-    : Statement    { () }
-    | Statement Statements    { () }
+    : Statement    { [$1] }
+    | Statements Statement    { $2 : $1 }
 
 LoopStatement :: { () }
 LoopStatement
-    : ForStatement    { () }
-    | ForInStatement    { () }
-    | WhileStatement    { () }
-    | DoWhileStatement    { () }
+    : ForStatement    { $1 }
+    | ForInStatement    { $1 }
+    | WhileStatement    { $1 }
+    | DoWhileStatement    { $1 }
 
 ForStatement :: { () }
 ForStatement
-    : 'for' ';' ';' CodeBlock    { () }
-    | 'for' ForInit ';' ';' CodeBlock    { () }
-    | 'for' ';' Expression ';' CodeBlock    { () }
-    | 'for' ForInit ';' Expression ';' CodeBlock    { () }
-    | 'for' ';' ';' Expression CodeBlock    { () }
-    | 'for' ForInit ';' ';' Expression CodeBlock    { () }
-    | 'for' ';' Expression ';' Expression CodeBlock    { () }
-    | 'for' ForInit ';' Expression ';' Expression CodeBlock    { () }
-    | 'for' '(' ';' ';' ')' CodeBlock    { () }
-    | 'for' '(' ForInit ';' ';' ')' CodeBlock    { () }
-    | 'for' '(' ';' Expression ';' ')' CodeBlock    { () }
-    | 'for' '(' ForInit ';' Expression ';' ')' CodeBlock    { () }
-    | 'for' '(' ';' ';' Expression ')' CodeBlock    { () }
-    | 'for' '(' ForInit ';' ';' Expression ')' CodeBlock    { () }
-    | 'for' '(' ';' Expression ';' Expression ')' CodeBlock    { () }
-    | 'for' '(' ForInit ';' Expression ';' Expression ')' CodeBlock    { () }
+    : 'for' ';' ';' CodeBlock    { trace "for1" () }
+    | 'for' ForInit ';' ';' CodeBlock    { trace "for2" () }
+    | 'for' ';' Expression ';' CodeBlock    { trace "for3" () }
+    | 'for' ForInit ';' Expression ';' CodeBlock    { trace "for4" () }
+    | 'for' ';' ';' Expression CodeBlock    { trace "for5" () }
+    | 'for' ForInit ';' ';' Expression CodeBlock    { trace "for6" () }
+    | 'for' ';' Expression ';' Expression CodeBlock    { trace "for7" () }
+    | 'for' ForInit ';' Expression ';' Expression CodeBlock    { trace "for8" () }
+    | 'for' '(' ';' ';' ')' CodeBlock    { trace "for9" () }
+    | 'for' '(' ForInit ';' ';' ')' CodeBlock    { trace "for10" () }
+    | 'for' '(' ';' Expression ';' ')' CodeBlock    { trace "for11" () }
+    | 'for' '(' ForInit ';' Expression ';' ')' CodeBlock    { trace "for12" () }
+    | 'for' '(' ';' ';' Expression ')' CodeBlock    { trace "for13" () }
+    | 'for' '(' ForInit ';' ';' Expression ')' CodeBlock    { trace "for14" () }
+    | 'for' '(' ';' Expression ';' Expression ')' CodeBlock    { trace "for15" () }
+    | 'for' '(' ForInit ';' Expression ';' Expression ')' CodeBlock    { trace "for16" () }
 
 ForInit :: { () }
 ForInit
@@ -199,7 +192,7 @@ ForInit
 
 ForInStatement :: { () }
 ForInStatement
-    : 'for' Pattern 'in' Expression CodeBlock    { () }
+    : 'for' Pattern 'in' Expression CodeBlock    { trace "for-in" () }
 
 WhileStatement :: { () }
 WhileStatement
@@ -950,7 +943,7 @@ PrecedenceClause
 
 PrecedenceLevel :: { () }
 PrecedenceLevel
-    : {- TEXT-DESCRIPTION (A decimal integer between 0 and 255, inclusive) -}    { () }
+    : DECIMAL_LITERAL {- officially only 0 to 255 -}    { () }
 
 AssociativityClause :: { () }
 AssociativityClause
@@ -1099,8 +1092,14 @@ BalancedToken
     | '[' BalancedTokens ']'    { () }
     | '{' '}'    { () }
     | '{' BalancedTokens '}'    { () }
-    | {- TEXT-DESCRIPTION (Any identifier, keyword, literal, or operator) -}    { () }
-    | {- TEXT-DESCRIPTION (Any punctuation except) -}    { () }
+    | Literal    { () }
+    | Identifier    { () }
+    | Operator    { () }
+
+{- FIXME: WORK needed: official:
+    | TEXT-DESCRIPTION (Any identifier, keyword, literal, or operator)
+    | TEXT-DESCRIPTION (Any punctuation except)
+-}
 
 Expression :: { () }
 Expression
@@ -1305,7 +1304,7 @@ InitializerExpression
 
 ExplicitMemberExpression :: { () }
 ExplicitMemberExpression
-    : PostfixExpression '.' DecimalDigits    { () }
+    : PostfixExpression '.' DECIMAL_LITERAL    { () }
     | PostfixExpression '.' Identifier    { () }
     | PostfixExpression '.' Identifier GenericArgumentClause    { () }
 
@@ -1331,50 +1330,16 @@ OptionalChainingExpression
 
 Identifier :: { () }
 Identifier
-    : IdentifierHead    { () }
-    | IdentifierHead IdentifierCharacters    { () }
-    | '`' IdentifierHead '`'    { () }
-    | '`' IdentifierHead IdentifierCharacters '`'    { () }
-    | ImplicitParameterName    { () }
+    : IDENT    { () }
 
 IdentifierList :: { () }
 IdentifierList
     : Identifier    { () }
     | Identifier ',' IdentifierList    { () }
 
-IdentifierHead :: { () }
-IdentifierHead
-    : {- TEXT-DESCRIPTION (Upper- or lowercase letter A through Z) -}    { () }
-    | '_'    { () }
-    | {- TEXT-DESCRIPTION (U+00A8, U+00AA, U+00AD, U+00AF, U+00B2–U+00B5, or U+00B7–U+00BA) -}    { () }
-    | {- TEXT-DESCRIPTION (U+00BC–U+00BE, U+00C0–U+00D6, U+00D8–U+00F6, or U+00F8–U+00FF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+0100–U+02FF, U+0370–U+167F, U+1681–U+180D, or U+180F–U+1DBF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+1E00–U+1FFF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+200B–U+200D, U+202A–U+202E, U+203F–U+2040, U+2054, or U+2060–U+206F) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2070–U+20CF, U+2100–U+218F, U+2460–U+24FF, or U+2776–U+2793) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2C00–U+2DFF or U+2E80–U+2FFF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+3004–U+3007, U+3021–U+302F, U+3031–U+303F, or U+3040–U+D7FF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+F900–U+FD3D, U+FD40–U+FDCF, U+FDF0–U+FE1F, or U+FE30–U+FE44) -}    { () }
-    | {- TEXT-DESCRIPTION (U+FE47–U+FFFD) -}    { () }
-    | {- TEXT-DESCRIPTION (U+10000–U+1FFFD, U+20000–U+2FFFD, U+30000–U+3FFFD, or U+40000–U+4FFFD) -}    { () }
-    | {- TEXT-DESCRIPTION (U+50000–U+5FFFD, U+60000–U+6FFFD, U+70000–U+7FFFD, or U+80000–U+8FFFD) -}    { () }
-    | {- TEXT-DESCRIPTION (U+90000–U+9FFFD, U+A0000–U+AFFFD, U+B0000–U+BFFFD, or U+C0000–U+CFFFD) -}    { () }
-    | {- TEXT-DESCRIPTION (U+D0000–U+DFFFD or U+E0000–U+EFFFD) -}    { () }
-
-IdentifierCharacter :: { () }
-IdentifierCharacter
-    : {- TEXT-DESCRIPTION (Digit 0 through 9) -}    { () }
-    | {- TEXT-DESCRIPTION (U+0300–U+036F, U+1DC0–U+1DFF, U+20D0–U+20FF, or U+FE20–U+FE2F) -}    { () }
-    | IdentifierHead    { () }
-
-IdentifierCharacters :: { () }
-IdentifierCharacters
-    : IdentifierCharacter    { () }
-    | IdentifierCharacter IdentifierCharacters    { () }
-
 ImplicitParameterName :: { () }
 ImplicitParameterName
-    : '$' DecimalDigits    { () }
+    : '$' DECIMAL_LITERAL    { () }
 
 Literal :: { () }
 Literal
@@ -1394,158 +1359,27 @@ IntegerLiteral
 
 BinaryLiteral :: { () }
 BinaryLiteral
-    : '0b' BinaryDigit    { () }
-    | '0b' BinaryDigit BinaryLiteralCharacters    { () }
-
-BinaryDigit :: { () }
-BinaryDigit
-    : {- TEXT-DESCRIPTION (Digit 0 or 1) -}    { () }
-
-BinaryLiteralCharacter :: { () }
-BinaryLiteralCharacter
-    : BinaryDigit    { () }
-    | '_'    { () }
-
-BinaryLiteralCharacters :: { () }
-BinaryLiteralCharacters
-    : BinaryLiteralCharacter    { () }
-    | BinaryLiteralCharacter BinaryLiteralCharacters    { () }
+    : BINARY_LITERAL { () }
 
 OctalLiteral :: { () }
 OctalLiteral
-    : '0o' OctalDigit    { () }
-    | '0o' OctalDigit OctalLiteralCharacters    { () }
-
-OctalDigit :: { () }
-OctalDigit
-    : {- TEXT-DESCRIPTION (Digit 0 through 7) -}    { () }
-
-OctalLiteralCharacter :: { () }
-OctalLiteralCharacter
-    : OctalDigit    { () }
-    | '_'    { () }
-
-OctalLiteralCharacters :: { () }
-OctalLiteralCharacters
-    : OctalLiteralCharacter    { () }
-    | OctalLiteralCharacter OctalLiteralCharacters    { () }
+    : OCTAL_LITERAL    { () }
 
 DecimalLiteral :: { () }
 DecimalLiteral
-    : DecimalDigit    { () }
-    | DecimalDigit DecimalLiteralCharacters    { () }
-
-DecimalDigit :: { () }
-DecimalDigit
-    : {- TEXT-DESCRIPTION (Digit 0 through 9) -}    { () }
-
-DecimalDigits :: { () }
-DecimalDigits
-    : DecimalDigit    { () }
-    | DecimalDigit DecimalDigits    { () }
-
-DecimalLiteralCharacter :: { () }
-DecimalLiteralCharacter
-    : DecimalDigit    { () }
-    | '_'    { () }
-
-DecimalLiteralCharacters :: { () }
-DecimalLiteralCharacters
-    : DecimalLiteralCharacter    { () }
-    | DecimalLiteralCharacter DecimalLiteralCharacters    { () }
+    : DECIMAL_LITERAL    { () }
 
 HexadecimalLiteral :: { () }
 HexadecimalLiteral
-    : '0x' HexadecimalDigit    { () }
-    | '0x' HexadecimalDigit HexadecimalLiteralCharacters    { () }
-
-HexadecimalDigit :: { () }
-HexadecimalDigit
-    : {- TEXT-DESCRIPTION (Digit 0 through 9, a through f, or A through F) -}    { () }
-
-HexadecimalLiteralCharacter :: { () }
-HexadecimalLiteralCharacter
-    : HexadecimalDigit    { () }
-    | '_'    { () }
-
-HexadecimalLiteralCharacters :: { () }
-HexadecimalLiteralCharacters
-    : HexadecimalLiteralCharacter    { () }
-    | HexadecimalLiteralCharacter HexadecimalLiteralCharacters    { () }
+    : HEXADECIMAL_LITERAL    { () }
 
 FloatingPointLiteral :: { () }
 FloatingPointLiteral
-    : DecimalLiteral    { () }
-    | DecimalLiteral DecimalFraction    { () }
-    | DecimalLiteral DecimalExponent    { () }
-    | DecimalLiteral DecimalFraction DecimalExponent    { () }
-    | HexadecimalLiteral HexadecimalExponent    { () }
-    | HexadecimalLiteral HexadecimalFraction HexadecimalExponent    { () }
-
-DecimalFraction :: { () }
-DecimalFraction
-    : '.' DecimalLiteral    { () }
-
-DecimalExponent :: { () }
-DecimalExponent
-    : FloatingPointE DecimalLiteral    { () }
-    | FloatingPointE Sign DecimalLiteral    { () }
-
-HexadecimalFraction :: { () }
-HexadecimalFraction
-    : '.' HexadecimalDigit    { () }
-    | '.' HexadecimalDigit HexadecimalLiteralCharacters    { () }
-
-HexadecimalExponent :: { () }
-HexadecimalExponent
-    : FloatingPointP DecimalLiteral    { () }
-    | FloatingPointP Sign DecimalLiteral    { () }
-
-FloatingPointE :: { () }
-FloatingPointE
-    : 'e'    { () }
-    | 'E'    { () }
-
-FloatingPointP :: { () }
-FloatingPointP
-    : 'p'    { () }
-    | 'P'    { () }
-
-Sign :: { () }
-Sign
-    : '+'    { () }
-    | '-'    { () }
+    : FLOATING_POINT_LITERAL    { () }
 
 StringLiteral :: { () }
 StringLiteral
-    : '"' '"'    { () }
-    | '"' QuotedText '"'    { () }
-
-QuotedText :: { () }
-QuotedText
-    : QuotedTextItem    { () }
-    | QuotedTextItem QuotedText    { () }
-
-QuotedTextItem :: { () }
-QuotedTextItem
-    : EscapedCharacter    { () }
-    | '\(' Expression ')'    { () }
-    | {- TEXT-DESCRIPTION (Any Unicode extended grapheme cluster except) -}    { () }
-
-EscapedCharacter :: { () }
-EscapedCharacter
-    : '\0'    { () }
-    | '\\'    { () }
-    | '\t'    { () }
-    | '\n'    { () }
-    | '\r'    { () }
-    | '\"'    { () }
-    | '\''    { () }
-    | '\u' '{' UnicodeScalarDigits '}'    { () }
-
-UnicodeScalarDigits :: { () }
-UnicodeScalarDigits
-    : {- TEXT-DESCRIPTION (Between one and eight hexadecimal digits) -}    { () }
+    : STRING_LITERAL    { () }
 
 Operator :: { () }
 Operator
@@ -1570,30 +1404,10 @@ OperatorHead
     | '^'    { () }
     | '~'    { () }
     | '?'    { () }
-    | {- TEXT-DESCRIPTION (U+00A1–U+00A7) -}    { () }
-    | {- TEXT-DESCRIPTION (U+00A9 or U+00AB) -}    { () }
-    | {- TEXT-DESCRIPTION (U+00AC or U+00AE) -}    { () }
-    | {- TEXT-DESCRIPTION (U+00B0–U+00B1, U+00B6, U+00BB, U+00BF, U+00D7, or U+00F7) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2016–U+2017 or U+2020–U+2027) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2030–U+203E) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2041–U+2053) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2055–U+205E) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2190–U+23FF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2500–U+2775) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2794–U+2BFF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+2E00–U+2E7F) -}    { () }
-    | {- TEXT-DESCRIPTION (U+3001–U+3003) -}    { () }
-    | {- TEXT-DESCRIPTION (U+3008–U+3030) -}    { () }
 
 OperatorCharacter :: { () }
 OperatorCharacter
     : OperatorHead    { () }
-    | {- TEXT-DESCRIPTION (U+0300–U+036F) -}    { () }
-    | {- TEXT-DESCRIPTION (U+1DC0–U+1DFF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+20D0–U+20FF) -}    { () }
-    | {- TEXT-DESCRIPTION (U+FE00–U+FE0F) -}    { () }
-    | {- TEXT-DESCRIPTION (U+FE20–U+FE2F) -}    { () }
-    | {- TEXT-DESCRIPTION (U+E0100–U+E01EF) -}    { () }
 
 OperatorCharacters :: { () }
 OperatorCharacters
@@ -1742,8 +1556,14 @@ ClassRequirement
 lexerWrapper :: (Token -> Alex a) -> Alex a
 lexerWrapper = (alexMonadScan >>=)
 
-parseError :: [Token] -> a
-parseError _ = error "Parse error"
+parseError :: Token -> a
+parseError t = error $ "Parse error, error token: " ++ show t
 
-    
+parse s = runAlex s parseSwift
+
+main =
+    do s <- getContents
+       print s
+       print $ parse s
+
 }

@@ -6,6 +6,8 @@ import qualified Data.Map as Map
 import Language.Swift.Parser.SourceLocation
 import Language.Swift.Parser.Token
 
+import Debug.Trace
+
 }
 
 %wrapper "monad"
@@ -20,13 +22,61 @@ $alnum = [$alpha$digits]
 
 @identifier = @identifier_head @identifier_character*
 
-@integer = $digits+
+@decimal_literal = $digits+
 
 :-
 
+";"    { adapt (symbolToken TokenSemicolon) }
+"("    { adapt (symbolToken TokenLParen) }
+")"    { adapt (symbolToken TokenRParen) }
+"{"    { adapt (symbolToken TokenLBrace) }
+"}"    { adapt (symbolToken TokenRBrace) }
+":"    { adapt (symbolToken TokenColon) }
+","    { adapt (symbolToken TokenComma) }
+"<"    { adapt (symbolToken TokenLT) }
+">"    { adapt (symbolToken TokenGT) }
+"=="    { adapt (symbolToken TokenDoubleEq) }
+"."    { adapt (symbolToken TokenDot) }
+"="    { adapt (symbolToken TokenEq) }
+"->"    { adapt (symbolToken TokenMinusGT) }
+"..."    { adapt (symbolToken TokenDotDotDot) }
+"#"    { adapt (symbolToken TokenHash) }
+"_"    { adapt (symbolToken TokenUnderscore) }
+"?"    { adapt (symbolToken TokenQuestionmark) }
+"!"    { adapt (symbolToken TokenBang) }
+"@"    { adapt (symbolToken TokenAt) }
+"["    { adapt (symbolToken TokenLBracket) }
+"]"    { adapt (symbolToken TokenRBracket) }
+"&"    { adapt (symbolToken TokenAmp) }
+"`"    { adapt (symbolToken TokenBacktick) }
+"$"    { adapt (symbolToken TokenDollar) }
+"+"    { adapt (symbolToken TokenPlus) }
+"-"    { adapt (symbolToken TokenMinus) }
+"/"    { adapt (symbolToken TokenDiv) }
+"*"    { adapt (symbolToken TokenTimes) }
+"%"    { adapt (symbolToken TokenPercent) }
+"|"    { adapt (symbolToken TokenPipe) }
+"^"    { adapt (symbolToken TokenCaret) }
+"~"    { adapt (symbolToken TokenTilde) }
+".."    { adapt (symbolToken TokenDotDot) }
+
 @identifier { \(loc, _, _, str) len -> keywordOrIdent (take len str) (alexPosnToTokenSpan loc) }
 
+@decimal_literal { adapt (mkString DecimalLiteral) }
+
+[\ \t \n]+  ;
+
 {
+
+mkString :: (Monad m) => (TokenSpan -> String -> Token) -> TokenSpan -> Int -> String -> m Token
+mkString toToken loc len str = do return (toToken loc (take len str))
+
+adapt :: (TokenSpan -> Int -> String -> Alex Token) -> AlexInput -> Int -> Alex Token
+adapt f loc@(p@(AlexPn offset line col),_,_,inp) len =
+    (f (TokenSpan offset line col) len inp)
+
+symbolToken :: Monad m => (TokenSpan -> Token) -> TokenSpan -> Int -> String -> m Token
+symbolToken mkToken location _ _ = trace ("SYM("++show (mkToken location)++")") $ return (mkToken location)
 
 alexPosnToTokenSpan :: AlexPosn -> TokenSpan
 alexPosnToTokenSpan (AlexPn offset line col) = (TokenSpan offset line col)
@@ -37,8 +87,8 @@ alexEOF = do return (TokenEOF tokenSpanEmpty)
 keywordOrIdent :: String -> TokenSpan -> Alex Token
 keywordOrIdent str location =
     return $ case Map.lookup str keywords of
-        Just symbol -> symbol location
-        Nothing -> TokenIdentifier location str
+        Just symbol -> trace ("KW("++show (symbol location)++")") $ symbol location
+        Nothing -> trace ("IDENT("++str++")") $ TokenIdentifier location str
 
 keywords :: Map.Map String (TokenSpan -> Token)
 keywords = Map.fromList keywordNames

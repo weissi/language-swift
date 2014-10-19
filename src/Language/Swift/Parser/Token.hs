@@ -5,6 +5,12 @@ import Language.Swift.Parser.SourceLocation
 data Token
     = TokenIdentifier { span :: !TokenSpan, name :: !String }
     | TokenEOF { span :: !TokenSpan }
+    | StringLiteral { span :: !TokenSpan, text :: !String }
+    | DecimalLiteral { span :: !TokenSpan, text :: !String }
+    | FloatingPointLiteral { span :: !TokenSpan, text :: !String }
+    | BinaryLiteral { span :: !TokenSpan, text :: !String }
+    | OctalLiteral { span :: !TokenSpan, text :: !String }
+    | HexadecimalLiteral { span :: !TokenSpan, text :: !String }
     -- auto generated below
     | TokenSemicolon { span :: !TokenSpan }    -- ;
     | TokenFor { span :: !TokenSpan }    -- for
@@ -258,7 +264,7 @@ spanOfToken (TokenType span) = span
 spanOfToken (TokenProtocol span) = span
 
 instance Show Token where
-  showsPrec _ (TokenEOF _) = showString ""
+  showsPrec _ (TokenEOF _) = showString "<EOF>"
   showsPrec _ (TokenIdentifier _ name) = showString name
   -- auto-generated below
   showsPrec _ (TokenSemicolon _) = showString ";"
@@ -385,3 +391,9 @@ instance Show Token where
   showsPrec _ (TokenDotDot _) = showString ".."
   showsPrec _ (TokenType _) = showString "Type"
   showsPrec _ (TokenProtocol _) = showString "Protocol"
+  showsPrec _ (StringLiteral _ t) = showString t
+  showsPrec _ (DecimalLiteral _ t) = showString t
+  showsPrec _ (FloatingPointLiteral _ t) = showString t
+  showsPrec _ (BinaryLiteral _ t) = showString t
+  showsPrec _ (OctalLiteral _ t) = showString t
+  showsPrec _ (HexadecimalLiteral _ t) = showString t
