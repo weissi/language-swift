@@ -11,20 +11,32 @@
   <xsl:variable name='uppers' select='"ABCDEFGHIJKLMNOPQRSTUVWXYZ"' />
 
   <xsl:template match="/grammar">
-    <xsl:call-template name="start-hs-preamble"/>
 
-    <xsl:call-template name="end-hs-preamble-and-start-data-section"/>
+    <xsl:call-template name="datatype"/>
 
-    <xsl:text>%token&#xa;</xsl:text>
-    <xsl:apply-templates mode="list-tokens"/>
+    <xsl:text>&#xa;</xsl:text>
 
-    <xsl:text>&#xa;%%&#xa;&#xa;</xsl:text>
+    <xsl:call-template name="span-of-tok"/>
 
-    <xsl:apply-templates mode="output-grammar"/>
+    <xsl:text>&#xa;</xsl:text>
 
-    <xsl:call-template name="postamble"/>
+    <xsl:call-template name="show-instance"/>
 
+  </xsl:template>
 
+  <xsl:template name="datatype">
+    <xsl:text>&#xa;data Token&#xa;</xsl:text>
+    <xsl:apply-templates mode="define-hs-token-data-type"/>
+  </xsl:template>
+
+  <xsl:template name="span-of-tok">
+    <xsl:text>spanOfToken :: Token -> TokenSpan&#xa;</xsl:text>
+    <xsl:apply-templates mode="define-span-of-tok"/>
+  </xsl:template>
+
+  <xsl:template name="show-instance">
+    <xsl:text>instance Show Token where&#xa;</xsl:text>
+    <xsl:apply-templates mode="define-show-instance"/>
   </xsl:template>
 
   <!-- HASKELL TOKEN DATATYPE -->
@@ -49,7 +61,47 @@
         <xsl:with-param name="prefix" select="'Token'"/>
         <xsl:with-param name="text" select="$text"/>
       </xsl:call-template>
+      <xsl:text> { span :: !TokenSpan }    -- </xsl:text>
+      <xsl:value-of select="text()" />
       <xsl:text>&#xa;</xsl:text>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- SPAN-OF-TOK FUNCTION -->
+  <xsl:template match="production" mode="define-span-of-tok">
+    <xsl:apply-templates select="alternative/literal"
+                         mode="define-span-of-tok"/>
+  </xsl:template>
+
+  <xsl:template match="literal" mode="define-span-of-tok">
+    <xsl:variable name="text" select="text()"/>
+    <xsl:if test="not(preceding::literal[text()=$text])">
+      <xsl:text>spanOfToken (</xsl:text>
+      <xsl:call-template name="replace-specials-and-camel-case">
+        <xsl:with-param name="prefix" select="'Token'"/>
+        <xsl:with-param name="text" select="$text"/>
+      </xsl:call-template>
+      <xsl:text> span) = span&#xa;</xsl:text>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- SHOW INSTANCE -->
+  <xsl:template match="production" mode="define-show-instance">
+    <xsl:apply-templates select="alternative/literal"
+                         mode="define-show-instance"/>
+  </xsl:template>
+
+  <xsl:template match="literal" mode="define-show-instance">
+    <xsl:variable name="text" select="text()"/>
+    <xsl:if test="not(preceding::literal[text()=$text])">
+      <xsl:text>  showsPrec _ (</xsl:text>
+      <xsl:call-template name="replace-specials-and-camel-case">
+        <xsl:with-param name="prefix" select="'Token'"/>
+        <xsl:with-param name="text" select="$text"/>
+      </xsl:call-template>
+      <xsl:text> _) = showString "</xsl:text>
+      <xsl:value-of select="text()"/>
+      <xsl:text>"&#xa;</xsl:text>
     </xsl:if>
   </xsl:template>
 
@@ -63,101 +115,13 @@
     <xsl:if test="not(preceding::literal[text()=$text])">
       <xsl:text>    '</xsl:text>
       <xsl:value-of select="$text"/>
-      <xsl:text>'    { </xsl:text>
+      <xsl:text>'    { Loc $$ </xsl:text>
       <xsl:call-template name="replace-specials-and-camel-case">
         <xsl:with-param name="prefix" select="'Token'"/>
         <xsl:with-param name="text" select="$text"/>
       </xsl:call-template>
-      <xsl:text> {} }&#xa;</xsl:text>
+      <xsl:text> }&#xa;</xsl:text>
     </xsl:if>
-  </xsl:template>
-
-<!-- THE BNF-LIKE GRAMMAR -->
-  <xsl:template match="production" mode="output-grammar">
-    <xsl:call-template name="camel-case">
-      <xsl:with-param name="text" select="@name"/>
-    </xsl:call-template>
-    <xsl:text> :: { () }&#xa;</xsl:text>
-    <xsl:call-template name="camel-case">
-      <xsl:with-param name="text" select="@name"/>
-    </xsl:call-template>
-    <xsl:text>&#xa;    :</xsl:text>
-    <xsl:apply-templates mode="output-grammar"/>
-    <xsl:text>&#xa;</xsl:text>
-    <xsl:text>&#xa;</xsl:text>
-  </xsl:template>
-
-  <xsl:template match="alternative" mode="output-grammar">
-    <xsl:if test="preceding-sibling::alternative">
-      <xsl:text>&#xa;    |</xsl:text>
-    </xsl:if>
-    <xsl:apply-templates mode="output-grammar"/>
-    <xsl:text>    { () }</xsl:text>
-  </xsl:template>
-
-  <xsl:template match="non-terminal" mode="output-grammar">
-    <xsl:text> </xsl:text>
-    <xsl:call-template name="camel-case">
-      <xsl:with-param name="text" select="text()"/>
-    </xsl:call-template>
-  </xsl:template>
-
-  <xsl:template match="literal" mode="output-grammar">
-    <xsl:text> '</xsl:text>
-    <xsl:value-of select="text()"/>
-    <xsl:text>'</xsl:text>
-  </xsl:template>
-
-  <xsl:template match="text-description" mode="output-grammar">
-    <xsl:text> {- TEXT-DESCRIPTION (</xsl:text>
-    <xsl:value-of select="text()"/>
-    <xsl:text>) -}</xsl:text>
-  </xsl:template>
-
-  <!-- OTHER STUFF -->
-  <xsl:template name="start-hs-preamble">
-    <xsl:text>
-{
-
-module Language.Swift.Parser.Parser where
-
-import Language.Swift.Parser.SourceLocation
-import Language.Swift.Parser.Lexer
-import Language.Swift.Parser.Token
-
-import Data.Char
-
-    </xsl:text>
-  </xsl:template>
-
-
-  <xsl:template name="end-hs-preamble-and-start-data-section">
-    <xsl:text>
-
-}
-
-%name calc
-%tokentype { Token }
-%error { parseError }
-%monad { Alex }
-%name parseSwift
-%lexer { lexerWrapper } { TokenEOF tokenSpanEmpty }
-    </xsl:text>
-  </xsl:template>
-
-  <xsl:template name="postamble">
-    <xsl:text>
-{
-
-lexerWrapper :: (Token -> Alex a) -> Alex a
-lexerWrapper = (alexMonadScan >>=)
-
-parseError :: [Token] -> a
-parseError _ = error "Parse error"
-
-    </xsl:text>
-
-    <xsl:text>&#xa;}&#xa;</xsl:text>
   </xsl:template>
 
   <!-- HELPERS -->
